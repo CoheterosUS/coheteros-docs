@@ -12,7 +12,7 @@ uint8: 1 byte
 uint16: 2 bytes
 uint32: 4 bytes
 
-Any enum, bitmask, or structure is subject to change without notice.
+Any enum, bitmask, or structure is subject to change without notice
 
 ## SystemState (Enum)
 
