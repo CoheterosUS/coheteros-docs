@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: [PROTOCOL.md]
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -24,23 +25,7 @@ jobs:
           token: ${{ secrets.COHETEROS_PROTOCOL_SYNC }}
           path: target
 
-      - name: Copy PROTOCOL.md
-        run: cp PROTOCOL.md target/PROTOCOL.md
-
-      - name: Check for changes
-        id: diff
-        working-directory: target
-        run: |
-          git add PROTOCOL.md
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-          git reset
-
       - name: Sync PR
-        if: steps.diff.outputs.changed == 'true'
         working-directory: target
         env:
           GH_TOKEN: ${{ secrets.COHETEROS_PROTOCOL_SYNC }}
@@ -49,7 +34,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if branch already exists on remote
+          # Switch to sync branch (clean) before copying
           if git ls-remote --exit-code origin "refs/heads/$BRANCH" > /dev/null 2>&1; then
             git fetch origin main "$BRANCH"
             git checkout "$BRANCH"
@@ -58,8 +43,16 @@ jobs:
             git checkout -b "$BRANCH"
           fi
 
+          # Copy after checkout so working tree is clean for branch switch
           cp ../PROTOCOL.md PROTOCOL.md
           git add PROTOCOL.md
+
+          # Skip if nothing changed
+          if git diff --cached --quiet; then
+            echo "No changes to sync"
+            exit 0
+          fi
+
           git commit -m "sync: update PROTOCOL.md from coheteros-docs@${GITHUB_SHA::7}"
           git push --force-with-lease origin "$BRANCH"
 
