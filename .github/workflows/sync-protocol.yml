@@ -39,21 +39,36 @@ jobs:
           fi
           git reset
 
-      - name: Create PR
+      - name: Sync PR
         if: steps.diff.outputs.changed == 'true'
         working-directory: target
         env:
           GH_TOKEN: ${{ secrets.COHETEROS_PROTOCOL_SYNC }}
         run: |
-          BRANCH="sync-protocol-${{ github.sha }}"
+          BRANCH="sync-protocol"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+
+          # Check if branch already exists on remote
+          if git ls-remote --exit-code origin "refs/heads/$BRANCH" > /dev/null 2>&1; then
+            git fetch origin main "$BRANCH"
+            git checkout "$BRANCH"
+            git rebase origin/main
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          cp ../PROTOCOL.md PROTOCOL.md
           git add PROTOCOL.md
-          git commit -m "sync: update PROTOCOL.md from coheteros-docs"
-          git push origin "$BRANCH"
-          gh pr create \
-            --repo "${{ matrix.repo }}" \
-            --title "sync: update PROTOCOL.md" \
-            --body "Automated sync from [coheteros-docs@\`${GITHUB_SHA::7}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})." \
-            --head "$BRANCH"
+          git commit -m "sync: update PROTOCOL.md from coheteros-docs@${GITHUB_SHA::7}"
+          git push --force-with-lease origin "$BRANCH"
+
+          # Create PR only if one doesn't already exist
+          EXISTING=$(gh pr list --repo "${{ matrix.repo }}" --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --repo "${{ matrix.repo }}" \
+              --title "sync: update PROTOCOL.md" \
+              --body "Automated sync from [coheteros-docs](https://github.com/${{ github.repository }})." \
+              --head "$BRANCH"
+          fi
