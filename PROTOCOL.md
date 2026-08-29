@@ -4,13 +4,15 @@ Little-Endian
 
 float: 4 bytes, IEEE 754
 
-int8: 1 byte, TC
-int16: 2 bytes, TC
-int32: 4 bytes, TC
+int8: 1 byte, Two's Complement
+int16: 2 bytes, Two's Complement
+int32: 4 bytes, Two's Complement
 
 uint8: 1 byte
 uint16: 2 bytes
 uint32: 4 bytes
+
+Any enum, bitmask, or structure is subject to change without notice.
 
 ## SystemState (Enum)
 
