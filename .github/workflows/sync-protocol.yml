@@ -31,7 +31,13 @@ jobs:
         id: diff
         working-directory: target
         run: |
-          git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+          git add PROTOCOL.md
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          git reset
 
       - name: Create PR
         if: steps.diff.outputs.changed == 'true'
