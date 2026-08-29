@@ -1,0 +1,53 @@
+name: Sync PROTOCOL.md to downstream repos
+
+on:
+  push:
+    branches: [main]
+    paths: [PROTOCOL.md]
+
+jobs:
+  sync:
+    runs-on: ubuntu-slim
+    strategy:
+      matrix:
+        repo:
+          - CoheterosUS/flight-controller
+          - CoheterosUS/coheteros-gsui-rust
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ secrets.COHETEROS_PROTOCOL_SYNC }}
+          path: target
+
+      - name: Copy PROTOCOL.md
+        run: cp PROTOCOL.md target/PROTOCOL.md
+
+      - name: Check for changes
+        id: diff
+        working-directory: target
+        run: |
+          git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ secrets.COHETEROS_PROTOCOL_SYNC }}
+        run: |
+          BRANCH="sync-protocol-${{ github.sha }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add PROTOCOL.md
+          git commit -m "sync: update PROTOCOL.md from coheteros-docs"
+          git push origin "$BRANCH"
+          gh pr create \
+            --repo "${{ matrix.repo }}" \
+            --title "sync: update PROTOCOL.md" \
+            --body "Automated sync from [coheteros-docs@\`${GITHUB_SHA::7}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})." \
+            --head "$BRANCH"
