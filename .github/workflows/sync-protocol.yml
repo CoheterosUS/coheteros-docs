@@ -34,14 +34,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Switch to sync branch (clean) before copying
-          if git ls-remote --exit-code origin "refs/heads/$BRANCH" > /dev/null 2>&1; then
-            git fetch origin main "$BRANCH"
-            git checkout "$BRANCH"
-            git rebase origin/main
-          else
-            git checkout -b "$BRANCH"
-          fi
+          # Always branch from latest main — single PROTOCOL.md commit on top
+          git checkout -B "$BRANCH" origin/main
 
           # Copy after checkout so working tree is clean for branch switch
           cp ../PROTOCOL.md PROTOCOL.md
