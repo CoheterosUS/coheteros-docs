@@ -48,7 +48,7 @@ jobs:
           fi
 
           git commit -m "sync: update PROTOCOL.md from coheteros-docs@${GITHUB_SHA::7}"
-          git push --force-with-lease origin "$BRANCH"
+          git push --force origin "$BRANCH"
 
           # Create PR only if one doesn't already exist
           EXISTING=$(gh pr list --repo "${{ matrix.repo }}" --head "$BRANCH" --state open --json number --jq '.[0].number')
